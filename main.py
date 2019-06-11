@@ -1,37 +1,29 @@
 # The main file of SnakeAI
-from random import randint, choice
-from msvcrt import kbhit, getch
 
 from time import sleep
 
-from snake import Snake
+import snake
 from simple_snake_moving import *
+from config import *
 import console
 
-num_snake = 1
-num_food = 2
-num_field = 0
-
-keys = {
-    b's': 'down',
-    b'w': 'up',
-    b'a': 'left',
-    b'd': 'right',
-}
-
-file_settings = 'settings.txt'
+# settings
 settings = {}
-
 state = 0
+delay = 0
 
+# field variables
 field_size = ()
-
 field = []
 
+# game variables
 scores = 0
 steps = 0
+game_is_on = True
+direction = 'right'
 
 
+# loads settings from file
 def load_settings():
     with open(file_settings, 'r') as f:
         for line in f:
@@ -39,10 +31,14 @@ def load_settings():
             settings[split_line[0]] = split_line[1]
 
 
+# setting initial state for game
 def setup():
     # setting field size
     global field_size
     field_size = (int(settings['field_size_x']), int(settings['field_size_y']))
+
+    global delay
+    delay = float(settings['delay'])
 
     # setting field
     field.append([4]+[5]*field_size[1]+[6])
@@ -53,19 +49,21 @@ def setup():
     field.append([8]+[5]*field_size[1]+[9])
 
 
+# generates food coordinates
 def generate_food():
     coords = (randint(1, field_size[0]), randint(1, field_size[1]))
-    while field[coords[0]][coords[1]] in [1,2]:
+    while field[coords[0]][coords[1]] in [1, 2]:
         coords = (randint(1, field_size[0]), randint(1, field_size[1]))
     return coords
 
 
+# checks if a snake can move in a new direction
 def check_direction(old, new):
     if not (old == 'up' and new == 'down' or
             old == 'down' and new == 'up' or
             old == 'left' and new == 'right' or
             old == 'right' and new == 'left'):
-            return new
+        return new
     return old
 
 
@@ -73,13 +71,10 @@ if __name__ == '__main__':
     load_settings()
     setup()
 
-    game_is_on = True
-    direction = 'right'
-
     food_coords = generate_food()
     field[food_coords[0]][food_coords[1]] = num_food
 
-    snake = Snake()
+    snake = snake.Snake()
     snake.create(field_size)
     field[snake.body[0][0]][snake.body[0][1]] = num_snake
     field[snake.body[-1][0]][snake.body[-1][1]] = num_snake
@@ -99,32 +94,20 @@ if __name__ == '__main__':
         # check if loss
         if snake.hit_wall(field_size):
             game_is_on = False
-            state = 0
+            state = 'Snake hit the wall.'
         if snake.hit_itself():
             game_is_on = False
-            state = 1
-
-        # # choosing a direction
-        # k = getch()
-        # # print(k)
-        # key = keys.get(k, direction)
-        # if not (direction == 'up' and key == 'down' or
-        #     direction == 'down' and key == 'up' or
-        #     direction == 'left' and key == 'right' or
-        #     direction == 'right' and key == 'left'):
-        #     direction = key
+            state = 'Snake hit itself.'
 
         # generating "stupid direction"
-        #new_direction = generate_stupid_direction(field_size, snake.body[-1])
+        # new_direction = generate_stupid_direction(field_size, snake.body[-1])
 
         # generating "moving on food"
         new_direction = generate_move_on_food(food_coords, snake.body[-1])
         direction = check_direction(direction, new_direction)
+
         console.update(field, steps, scores, generate_move_on_food.__name__)
 
-        sleep(0.2)
-    states = [
-    'Snake hit the wall.',
-    'Snake hit itself.',
-    ]
-    print("Game over! {}".format(states[state]))
+        sleep(delay)
+
+    print("Game over! {}".format(state))

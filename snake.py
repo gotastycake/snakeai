@@ -9,7 +9,8 @@ direction_coords = {'up': (-1, 0),
 
 class Snake:
     # the first one -- tail, the last one -- head
-    body = []
+    def __init__(self):
+        self.body = list()
 
     def move(self, direction, food_coords):
         dr = direction_coords[direction]

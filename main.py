@@ -2,25 +2,18 @@
 
 from time import sleep
 
-import snake
+from snake import Snake
 from simple_snake_moving import *
 from config import *
 import console
 
 # settings
-settings = {}
-state = 0
-delay = 0
+settings = {}       # dict of settings imported from "settings" file
+delay = 0           # delay between frames
 
 # field variables
 field_size = ()
 field = []
-
-# game variables
-scores = 0
-steps = 0
-game_is_on = True
-direction = 'right'
 
 
 # loads settings from file
@@ -30,15 +23,19 @@ def load_settings():
             split_line = line.split()
             settings[split_line[0]] = split_line[1]
 
-
-# setting initial state for game
-def setup():
     # setting field size
     global field_size
     field_size = (int(settings['field_size_x']), int(settings['field_size_y']))
 
+    # setting delay
     global delay
     delay = float(settings['delay'])
+
+
+# sets initial state for game
+def setup():
+    global field
+    field = list()
 
     # setting field
     field.append([4]+[5]*field_size[1]+[6])
@@ -67,14 +64,20 @@ def check_direction(old, new):
     return old
 
 
-if __name__ == '__main__':
-    load_settings()
+def play_game(decision_function=None):
     setup()
+
+    # game variables
+    game_is_on = True
+    scores = 0
+    steps = 0
+    direction = 'right'
+    state = ''  # describes the reason of game over
 
     food_coords = generate_food()
     field[food_coords[0]][food_coords[1]] = num_food
 
-    snake = snake.Snake()
+    snake = Snake()
     snake.create(field_size)
     field[snake.body[0][0]][snake.body[0][1]] = num_snake
     field[snake.body[-1][0]][snake.body[-1][1]] = num_snake
@@ -99,15 +102,26 @@ if __name__ == '__main__':
             game_is_on = False
             state = 'Snake hit itself.'
 
-        # generating "stupid direction"
-        # new_direction = generate_stupid_direction(field_size, snake.body[-1])
-
-        # generating "moving on food"
-        new_direction = generate_move_on_food(food_coords, snake.body[-1])
+        if not decision_function:
+            new_direction = generate_move_on_food(food_coords, snake.body[-1])
+        else:
+            new_direction = decision_function()
         direction = check_direction(direction, new_direction)
 
+        #console.update(field, steps, scores, decision_function.__name__)
         console.update(field, steps, scores, generate_move_on_food.__name__)
 
         sleep(delay)
 
     print("Game over! {}".format(state))
+
+    return scores
+
+
+if __name__ == '__main__':
+    load_settings()
+
+    while True:
+        score = play_game()
+        print('Score: {}'.format(score))
+        input()

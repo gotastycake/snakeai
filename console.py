@@ -1,7 +1,7 @@
 from os import system
 
 
-def update(field, steps, scores, function):
+def update(field, steps, scores, function, directions):
     system('cls')
     s = ''
     for i in field:
@@ -15,4 +15,4 @@ def update(field, steps, scores, function):
     s = s.replace('0', '▫')
     s = s.replace('1', '■')
     s = s.replace('2', '♥')
-    print('{}\nSteps: {}\nScores: {}\nMethod: {}'.format(s, steps, scores, function))
+    print('{}\nSteps: {}\nScores: {}\nMethod: {}\nPredicted directions: {}'.format(s, steps, scores, function, [round(i, 3) for i in directions]))

@@ -13,6 +13,15 @@ number_input_layer = 24
 number_middle_layer = 24
 number_output_layer = 4
 
+optimizer = 'Adam'
+activation = 'linear'
+loss_function = 'mean_squared_logarithmic_error'
+
+n_models = 12
+n_best = 6
+n_runs = 10
+n_trains = 15
+
 settings = {}  # dict of settings imported from "settings" file
 delay = 0  # delay between frames
 field_size = ()

@@ -13,6 +13,9 @@ import train
 
 
 max_steps = 50
+n_train = 30
+empty_field = []
+
 
 # sets initial state for game
 def setup():
@@ -29,9 +32,9 @@ def setup():
 
 
 # generates food coordinates
-def generate_food():
+def generate_food(field):
     coords = (randint(1, field_size[0]), randint(1, field_size[1]))
-    while field[coords[0]][coords[1]] in [1, 2]:
+    while field[coords[0]][coords[1]] in [num_food, num_snake]:
         coords = (randint(1, field_size[0]), randint(1, field_size[1]))
     return coords
 
@@ -48,14 +51,14 @@ def set_new_direction(old, pred):
     return old
 
 
-def play_game(model):
+def play_game(model, epoch):
     setup()
 
     # game variables
     game_is_on = True
     score = 0
     steps = 0
-    total_steps = 0
+    lifetime = 0
     direction = 'right'
     state = ''  # describes the reason of game over
 
@@ -64,7 +67,7 @@ def play_game(model):
     field[snake.body[0][0]][snake.body[0][1]] = num_snake
     field[snake.body[-1][0]][snake.body[-1][1]] = num_snake
 
-    food_coords = generate_food()
+    food_coords = generate_food(field)
     field[food_coords[0]][food_coords[1]] = num_food
 
     while game_is_on:
@@ -76,7 +79,7 @@ def play_game(model):
         tail_coords = snake.move(direction, food_coords)
         if snake.body[-1] == food_coords:
             score += 1
-            food_coords = generate_food()
+            food_coords = generate_food(field)
             field[food_coords[0]][food_coords[1]] = num_food
             steps = 0
         else:
@@ -84,7 +87,7 @@ def play_game(model):
         field[snake.body[-1][0]][snake.body[-1][1]] = num_snake
 
         steps += 1
-        total_steps +=1
+        lifetime +=1
 
         # check if loss
         if snake.hit_wall(field_size):
@@ -96,17 +99,14 @@ def play_game(model):
         if steps >= max_steps:
             game_is_on = False
             state = 'Snake lost its way.'
-            total_steps = 0
-        console.update(field, total_steps, score, 'brain', pred[0])
-        # new_direction = generate_move_on_food(food_coords, snake.body[-1])
+            lifetime = 0
+        console.update(field, score, lifetime, steps, pred[0], X, epoch, direction)
 
-        # print(X[:8], X[8:16], X[16:], sep='\n')
-        print('Head coords:{}'.format(snake.body[-1]))
         sleep(delay)
 
     print("Game over! {}".format(state))
-
-    return total_steps, score
+    del snake
+    return lifetime, score
 
 
 def play_nogui(model):
@@ -116,7 +116,7 @@ def play_nogui(model):
     game_is_on = True
     score = 0
     steps = 0
-    total_steps = 0
+    lifetime = 0
     direction = 'right'
     state = ''  # describes the reason of game over
 
@@ -125,7 +125,7 @@ def play_nogui(model):
     field[snake.body[0][0]][snake.body[0][1]] = num_snake
     field[snake.body[-1][0]][snake.body[-1][1]] = num_snake
 
-    food_coords = generate_food()
+    food_coords = generate_food(field)
     field[food_coords[0]][food_coords[1]] = num_food
 
     while game_is_on:
@@ -137,7 +137,7 @@ def play_nogui(model):
         tail_coords = snake.move(direction, food_coords)
         if snake.body[-1] == food_coords:
             score += 1
-            food_coords = generate_food()
+            food_coords = generate_food(field)
             field[food_coords[0]][food_coords[1]] = num_food
             steps = 0
         else:
@@ -145,7 +145,7 @@ def play_nogui(model):
         field[snake.body[-1][0]][snake.body[-1][1]] = num_snake
 
         steps += 1
-        total_steps +=1
+        lifetime +=1
 
         # check if loss
         if snake.hit_wall(field_size):
@@ -154,8 +154,9 @@ def play_nogui(model):
             game_is_on = False
         if steps >= max_steps:
             game_is_on = False
-            total_steps = 0
-    return total_steps, score
+            lifetime = 0
+    del snake
+    return lifetime, score
 
 
 if __name__ == '__main__':
@@ -163,9 +164,11 @@ if __name__ == '__main__':
     #event = input('train or play? ')
     event = 't'
     if event in ['train', 't']:
-        train.train_models(30)
+        train.train_models(n_train, load_models=False)
         train.df_stats.reset_index()
         train.df_stats.to_csv('output.csv')
+    elif event in ['cross', 'c']:
+        train.cross_validation()
     else:
         while True:
             cur_score = play_game()
